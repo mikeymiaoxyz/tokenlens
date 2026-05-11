@@ -3,6 +3,7 @@ import type { UsageQuery } from '../usage/query.js';
 import { parseAllSessions } from '../parser.js';
 import type { ProjectSummary } from '../types.js';
 import { listProviderStatus } from '../usage/providerService.js';
+import { applyProjectFilter } from '../usage/projectFilter.js';
 
 const SUPPORTED_ANALYTICS_PROVIDERS = new Set(['claude', 'openclaw']);
 
@@ -13,6 +14,7 @@ function getDateKey(timestamp: string): string {
 function toDateRange(query: UsageQuery) {
   return { start: query.from, end: query.to };
 }
+
 
 export async function getAnalytics(query: UsageQuery): Promise<AnalyticsResponse> {
   const statuses = await listProviderStatus();
@@ -41,16 +43,19 @@ toolCallTrend: [],
     projects.push(...await parseAllSessions(dateRange,undefined));
   } else {
     for (const provider of query.providers) {
-      projects.push(...await parseAllSessions(dateRange, provider));
+      projects.push(...await parseAllSessions(dateRange,provider));
     }
   }
+
+  // Apply project filter
+  const filteredProjects = applyProjectFilter(projects, query.project);
 
   // Aggregate code changes
   const changeMap = new Map<string, { added: number; deleted: number; files: Set<string> }>();
   const toolCountMap = new Map<string, number>();
   const trendMap = new Map<string, Map<string, number>>();
 
-  for (const project of projects) {
+  for (const project of filteredProjects) {
     for (const session of project.sessions) {
       for (const turn of session.turns) {
         for (const call of turn.assistantCalls) {
@@ -110,7 +115,7 @@ toolCallTrend: [],
   toolCallTrend.sort((a, b) => a.date.localeCompare(b.date));
 
   // Calculate productivity KPIs
-  const editCalls = projects.flatMap(p =>
+  const editCalls = filteredProjects.flatMap(p =>
     p.sessions.flatMap(s=>
       s.turns.flatMap(t =>
         t.assistantCalls.filter(c => c.tools.includes('Edit') || c.tools.includes('Write'))

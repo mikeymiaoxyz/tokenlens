@@ -1,6 +1,7 @@
 import type { UsageQuery } from '../usage/query.js';
 import { parseAllSessions } from'../parser.js';
 import type { ProjectSummary } from '../types.js';
+import { applyProjectFilter } from '../usage/projectFilter.js';
 
 export interface HourlyActivityEntry {
   date: string;
@@ -28,8 +29,9 @@ function getDateHourKey(timestamp: string): { date: string; hour: number } {
 }
 
 function toDateRange(query:UsageQuery) {
-  return { start: query.from, end: query.to };
+  return {start: query.from, end: query.to };
 }
+
 
 export async function getHourlyActivity(query: UsageQuery): Promise<HourlyActivityResponse> {
   const dateRange = toDateRange(query);
@@ -39,13 +41,15 @@ export async function getHourlyActivity(query: UsageQuery): Promise<HourlyActivi
     projects.push(...await parseAllSessions(dateRange, undefined));
   } else {
     for (const provider of query.providers) {
-      projects.push(...await parseAllSessions(dateRange, provider));
+      projects.push(...await parseAllSessions(dateRange,provider));
     }
-}
+  }
+
+  const filteredProjects = applyProjectFilter(projects, query.project);
 
   const hourMap = new Map<string, HourlyActivityEntry>();
 
-  for (const project of projects) {
+  for (const project of filteredProjects) {
     for (const session of project.sessions) {
       for (const turn of session.turns) {
         for (const call of turn.assistantCalls) {

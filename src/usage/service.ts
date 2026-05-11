@@ -6,6 +6,7 @@ DailyUsageDTO,
   ModelUsageDTO,
   ProviderUsageDTO,
 } from '../shared/types.js';
+import { applyProjectFilter } from './projectFilter.js';
 import { listProviderStatus } from './providerService.js';
 import { parseAllSessions } from '../parser.js';
 import { aggregateProjectsByProvider } from './aggregate.js';
@@ -28,16 +29,6 @@ function diskCacheKey(query: UsageQuery, suffix: string): string {
   return raw.replace(/[^a-zA-Z0-9_.-]/g, '_');
 }
 
-function applyProjectFilter(projects: ProjectSummary[], project: string | null): ProjectSummary[] {
-  if (!project) return projects;
-  const keyword = project.toLowerCase();
-  return projects.filter(item =>
-    item.project.toLowerCase() === keyword ||
-    item.projectPath.toLowerCase() === keyword ||
-    item.project.toLowerCase().includes(keyword) ||
-    item.projectPath.toLowerCase().includes(keyword),
-  );
-}
 
 async function loadProjects(query: UsageQuery): Promise<ProjectSummary[]> {
   const dateRange = toDateRange(query);

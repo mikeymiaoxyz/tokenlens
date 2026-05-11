@@ -88,7 +88,7 @@ key={hourIdx}
                   title={`${DAYS[dayIdx]} ${hourIdx}:00 - ${metric === 'tokens' ? formatNumber(val) + ' tokens' : '$' + val.toFixed(4)}`}
                 >
                   {isToday && hourIdx > currentHour && (
-                    <div className="absoluteinset-0 bg-stone-200/50 rounded-sm" />
+                    <div className="absolute inset-0 bg-stone-200/50 rounded-sm" />
                   )}
                 </div>
               ))}
@@ -96,7 +96,7 @@ key={hourIdx}
           ))}
 
           <div className="flex items-center justify-end gap-2 mt-3">
-            <span className="text-[10px]text-stone-400">Less</span>
+            <span className="text-[10px] text-stone-400">Less</span>
             <div className="flex gap-1">
               {['#f5f5f4', '#c7d2fe', '#a5b4fc', '#818cf8', '#4f46e5'].map((c, i) => (
                 <div key={i} className="w-4 h-4 rounded-sm" style={{ backgroundColor: c }} />

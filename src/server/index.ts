@@ -1,16 +1,20 @@
 import express from 'express';
 import { registerRoutes } from './routes.js';
 import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 export function createApp(): express.Express {
-const app = express();
+  const app = express();
   app.use(express.json());
 
-  const staticPath = join(process.cwd(), 'dist', 'client');
+  // Use import.meta.url to locate static files relative to the compiled server binary
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const staticPath = join(__dirname, '..', 'client');
   const indexPath = join(staticPath, 'index.html');
 
-  // API routes first
+// API routes first
   registerRoutes(app);
 
   // Root route
@@ -19,7 +23,7 @@ const app = express();
       const content = await readFile(indexPath, 'utf-8');
       res.type('html').send(content);
     } catch {
-      res.status(500).send('Cannot load index.html');
+res.status(500).send('Cannot load index.html');
     }
   });
 

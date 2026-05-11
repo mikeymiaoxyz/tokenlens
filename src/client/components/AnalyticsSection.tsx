@@ -1,15 +1,15 @@
 import { useMemo } from 'react';
 import {
-  AreaChart, Area, LineChart, Line,
+  AreaChart, Area,LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import type { AnalyticsResponse, DailyCodeChange, DailyToolCall } from '../../shared/types.js';
+import type { AnalyticsResponse } from '../../shared/types.js';
 
 const C = ['#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#0ea5e9', '#8b5cf6', '#ef4444', '#14b8a6'];
 
 // --- Shared UI primitives (matching Dashboard style) ---
 
-function Panel({ title, subtitle, children, className = '' }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
+function Panel({ title, subtitle, children, className ='' }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={`bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(120,113,108,0.06)] ${className}`}>
       <div className="mb-4">
@@ -22,7 +22,7 @@ function Panel({ title, subtitle, children, className = '' }: { title: string; s
 }
 
 function KPICard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
-  return (
+return (
     <div className={`flex flex-col justify-between rounded-2xl p-5 shadow-[0_1px_3px_rgba(120,113,108,0.06)] transition-shadow duration-200 hover:shadow-[0_4px_12px_rgba(120,113,108,0.09)] ${accent ? 'bg-indigo-50/50' : 'bg-white'}`}>
       <p className="text-[12px] font-medium text-stone-400 mb-2">{label}</p>
       <p className={`text-2xl font-extrabold tracking-tight ${accent ? 'text-indigo-600' : 'text-stone-900'}`}>{value}</p>
@@ -33,7 +33,7 @@ function KPICard({ label, value, sub, accent }: { label: string; value: string; 
 
 function formatDate(date: string): string {
   const d = new Date(date + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { month:'short', day: 'numeric' });
 }
 
 function formatNumber(n: number): string {
@@ -44,9 +44,10 @@ function formatNumber(n: number): string {
 
 // --- Time range filter helper ---
 
-type TimeRangeKey = 'today' | '7d' | '30d' |'60d' | 'all';
+type TimeRangeKey = 'today' | '7d' | '30d' | '60d' | 'all';
 
 const TIME_RANGES = [
+  { key: 'today', days: 1 },
   { key: '7d', days: 7 },
   { key: '30d', days: 30 },
   { key: '60d', days: 60 },
@@ -55,11 +56,16 @@ const TIME_RANGES = [
 
 function filterByDate<T extends { date: string }>(data: T[], rangeKey: TimeRangeKey): T[] {
   if (rangeKey === 'all') return data;
+  if (rangeKey === 'today'){
+    const now = new Date();
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    return data.filter(d => d.date === today);
+  }
   const range = TIME_RANGES.find(t => t.key === rangeKey);
   const days = range ? range.days : 30;
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
-  return data.filter(d => new Date(d.date) >= cutoff);
+  return data.filter(d=> new Date(d.date) >= cutoff);
 }
 
 // --- Props ---
@@ -95,7 +101,7 @@ export function AnalyticsSection({ analytics, timeRange }: AnalyticsSectionProps
     const days = filteredChanges.length;
     return {
       files: Math.round(filteredChanges.reduce((s, d) => s + d.filesModified, 0) / days),
-      added: Math.round(filteredChanges.reduce((s, d) => s + d.linesAdded, 0) / days),
+      added:Math.round(filteredChanges.reduce((s, d) => s + d.linesAdded, 0) / days),
       deleted: Math.round(filteredChanges.reduce((s, d) => s + d.linesDeleted, 0) / days),
       net: Math.round(filteredChanges.reduce((s, d) => s + d.netChange, 0) / days),
     };
@@ -110,10 +116,10 @@ export function AnalyticsSection({ analytics, timeRange }: AnalyticsSectionProps
             <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={filteredChanges}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fill: '#78716c', fontSize: 10 }} interval="preserveStartEnd" />
+                <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fill: '#78716c', fontSize: 10}} interval="preserveStartEnd" />
                 <YAxis tickFormatter={(v: number) => formatNumber(v)} tick={{ fill: '#78716c', fontSize: 10 }} width={50} />
                 <Tooltip
-                  content={({ active, payload, label }) => {
+                  content={({ active, payload, label}) => {
                     if (!active || !payload?.length) return null;
                     return (
                       <div className="bg-white rounded-lg shadow-lg border border-stone-200 px-3 py-2 text-[12px]">
@@ -123,7 +129,7 @@ export function AnalyticsSection({ analytics, timeRange }: AnalyticsSectionProps
                             {p.name}: {formatNumber(p.value as number)}
                           </p>
                         ))}
-                      </div>
+</div>
                     );
                   }}
                 />
@@ -133,7 +139,7 @@ export function AnalyticsSection({ analytics, timeRange }: AnalyticsSectionProps
                 <Legend iconType="line" wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
               </AreaChart>
             </ResponsiveContainer>
-          ) : (
+) : (
             <p className="text-stone-400 text-[13px] py-8 text-center">No code change data available</p>
           )}
         </Panel>
@@ -142,9 +148,9 @@ export function AnalyticsSection({ analytics, timeRange }: AnalyticsSectionProps
           {filteredToolTrend.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={filteredToolTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false}/>
                 <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fill: '#78716c', fontSize: 10 }} interval="preserveStartEnd" />
-                <YAxis tick={{ fill: '#78716c', fontSize: 10 }} width={40} />
+                <YAxis tick={{ fill: '#78716c', fontSize:10 }} width={40} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
@@ -153,7 +159,7 @@ export function AnalyticsSection({ analytics, timeRange }: AnalyticsSectionProps
                         <p className="font-semibold text-stone-700 mb-1">{formatDate(label)}</p>
                         {payload.map((p, i) => (
                           <p key={i} style={{ color: p.color }}>
-                            {p.name}: {p.value}
+{p.name}: {p.value}
                           </p>
                         ))}
                       </div>

@@ -4,7 +4,7 @@ import {
   ComposedChart, AreaChart, Area, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import { fetchDaily, fetchProjects, fetchProviders, fetchAnalytics, fetchHourlyActivity } from '../api/client.js';
+import {fetchDaily, fetchProjects, fetchProviders, fetchAnalytics, fetchHourlyActivity, TimeRangeKey } from '../api/client.js';
 import type { ProviderStatusDTO } from '../../shared/types.js';
 import { useCcusageData } from '../hooks/useCcusageData.js';
 import { useLocalStorageState } from '../hooks/useLocalStorageState.js';
@@ -26,7 +26,7 @@ const TIME_RANGES = [
   { key: 'all', label: 'ALL', days: 0 },
 ] as const;
 
-type TimeRangeKey = typeof TIME_RANGES[number]['key'];
+type LocalTimeRangeKey = typeof TIME_RANGES[number]['key'];
 
 function InsightCard({ label, title, detail, badge }: { label: string; title: string; detail: string; badge?: string }) {
   return (
@@ -133,7 +133,7 @@ export function Dashboard() {
   const [providersLoading, setProvidersLoading] = useState(true);
 
   const [provider, setProvider] = useLocalStorageState('dashboard_provider', 'claude');
-  const [timeRange, setTimeRange] = useLocalStorageState<TimeRangeKey>('dashboard_timeRange', '30d');
+  const [timeRange, setTimeRange] = useLocalStorageState<LocalTimeRangeKey>('dashboard_timeRange', '30d');
   const [project, setProject] = useLocalStorageState('dashboard_project', '');
   const [showPricing, setShowPricing] = useState(false);
   const [metric, setMetric] = useLocalStorageState<MetricMode>('dashboard_metric', 'tokens');
@@ -157,10 +157,10 @@ export function Dashboard() {
 
   const showProviderSwitcher = (providers?.length ?? 0) > 0;
 
-  const dailyData= useCcusageData(useCallback(() => fetchDaily(provider), [provider]));
-  const projectsData = useCcusageData(useCallback(() => fetchProjects(provider), [provider]));
-  const analyticsData = useCcusageData(useCallback(() => fetchAnalytics(provider), [provider]));
-const hourlyData = useCcusageData(useCallback(() => fetchHourlyActivity(provider), [provider]));
+  const dailyData = useCcusageData(useCallback(() => fetchDaily(provider, project, timeRange), [provider, project, timeRange]));
+  const projectsData = useCcusageData(useCallback(() => fetchProjects(provider, timeRange), [provider, timeRange]));
+  const analyticsData = useCcusageData(useCallback(() => fetchAnalytics(provider, project, timeRange), [provider, project, timeRange]));
+  const hourlyData = useCcusageData(useCallback(() => fetchHourlyActivity(provider, project, timeRange), [provider, project, timeRange]));
 
   const handleProviderChange = (p: string) => {
     setProvider(p);
@@ -382,7 +382,7 @@ const hourlyData = useCcusageData(useCallback(() => fetchHourlyActivity(provider
           <div className="flex flex-wrap items-center gap-6 p-4 bg-white rounded-2xl border border-stone-200/50 shadow-sm w-fit">
             <div className="flex flex-col gap-2">
               <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Time range</span>
-              <FilterTab options={TIME_RANGES} value={timeRange} onChange={v => setTimeRange(v as TimeRangeKey)} />
+              <FilterTab options={TIME_RANGES} value={timeRange} onChange={v => setTimeRange(v as LocalTimeRangeKey)} />
             </div>
 
             {projectList.length > 0 && (
