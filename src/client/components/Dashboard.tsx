@@ -101,7 +101,7 @@ function ProjectSelect({ projects, value, onChange }: { projects: string[]; valu
     <select value={value} onChange={e => onChange(e.target.value)}
       className="bg-white border border-stone-200 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-stone-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 max-w-[220px]">
       <option value="">All Projects</option>
-      {projects.map(p => <option key={p} value={p}>{formatProjectName(p, projects)}</option>)}
+      {projects.map(p => <option key={p}value={p}>{formatProjectName(p)}</option>)}
     </select>
   );
 }
@@ -280,13 +280,18 @@ export function Dashboard() {
   }, [projectsData.data]);
 
   // Pinned providers
-  const PINNED_PROVIDERS = ['claude', 'codex', 'openclaw'];
+  const PINNED_PROVIDERS =['all', 'claude', 'codex', 'hermes', 'openclaw'];
   const PROVIDER_DISPLAY: Record<string, string> = {
+    all: 'All',
     claude: 'Claude Code',
     codex: 'Codex',
+    hermes: 'Hermes',
     openclaw: 'OpenClaw',
   };
   const otherProviders = providers.filter(p => !PINNED_PROVIDERS.includes(p.name));
+
+  const isNonPinnedSelected = !PINNED_PROVIDERS.includes(provider);
+  const selectedProvider = isNonPinnedSelected? providers.find(p => p.name === provider) : null;
 
   const renderProviderSwitcher = () => (
     <div className="flex items-center gap-1 p-1 bg-stone-200/50 rounded-xl w-fit shadow-inner border border-stone-200/50">
@@ -310,8 +315,8 @@ export function Dashboard() {
               ? 'bg-white text-indigo-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] ring-1 ring-indigo-500/20'
               : 'text-stone-500 hover:text-stone-800 hover:bg-stone-200/50'
               }`}
-          >
-            More
+>
+            {isNonPinnedSelected && selectedProvider ? selectedProvider.displayName : 'More'}
             <svg className={`w-3 h-3 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
           </button>
           {dropdownOpen && (

@@ -132,7 +132,7 @@ export async function fetchProjects(provider = 'all', range: TimeRangeKey = '30d
   const json = await res.json() as ApiResult<ProjectUsageDTO[]>;
   const byProject: Record<string, DailyEntry[]> = {};
   for (const p of json.data) {
-    byProject[p.project] = [{
+    byProject[p.projectPath] = [{
       date: '',
       inputTokens: p.inputTokens,
       outputTokens: p.outputTokens,

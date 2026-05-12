@@ -29,26 +29,8 @@ export function formatPercent(n: number): string {
   return n.toFixed(1) + '%';
 }
 
-export function formatProjectName(project: string, allProjects?: string[]): string {
+export function formatProjectName(project: string): string {
   if (!project) return '';
-
-  const getParts = (p: string) => p.includes('/') ? p.split('/').filter(Boolean) : p.split('-').filter(Boolean);
-  const parts = getParts(project);
-  if (parts.length === 0) return project;
-
-  const baseName = parts[parts.length - 1];
-
-  if (allProjects && allProjects.length > 0) {
-    const hasDuplicate = allProjects.some(p => {
-      if (p === project) return false;
-      const otherParts = getParts(p);
-      return otherParts.length > 0 && otherParts[otherParts.length - 1] === baseName;
-    });
-
-    if (hasDuplicate && parts.length >= 2) {
-      return `${parts[parts.length - 2]}/${baseName}`;
-    }
-  }
-
-  return baseName;
+  // 直接返回完整项目名，不做分割处理
+  return project;
 }
