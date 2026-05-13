@@ -21,7 +21,7 @@ Tracks usage from 18 AI codingtools in a unified dashboard:
 - **Kiro** (`kiro`)
 - **Pi / OMP** (`pi`, `omp`)
 - **Droid** (`droid`)
--**Roo Code** (`roo-code`)
+- **Roo Code** (`roo-code`)
 - **Kilo Code** (`kilo-code`)
 - **Qwen** (`qwen`)
 - **Goose** (`goose`)
@@ -148,15 +148,15 @@ All API endpoints return responses wrapped in:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/health` | Health check |
-| `GET` | `/api/providers` | Available providers with status and source counts |
-| `GET` | `/api/summary` | Aggregated totals, by provider, by model, by project |
-| `GET` | `/api/daily` | Daily usage trends with model/provider breakdowns |
-| `GET` | `/api/projects` | Project-level usage breakdown |
-| `GET` | `/api/models` | Model-level usage breakdown |
-| `GET` | `/api/provider-usage` | Provider-level usage statistics |
-|`GET` | `/api/analytics` | Code change trends, tool usage, productivity KPIs |
-| `GET` | `/api/hourly-activity` | Hourly activity data for 24-hour heatmap |
+| `GET`  | `/api/health` | Health check |
+| `GET`  | `/api/providers` | Available providers with status and source counts |
+| `GET`  | `/api/summary` | Aggregated totals, by provider, by model, by project |
+| `GET`  | `/api/daily` | Daily usage trends with model/provider breakdowns |
+| `GET`  | `/api/projects` | Project-level usage breakdown |
+| `GET`  | `/api/models` | Model-level usage breakdown |
+| `GET`  | `/api/provider-usage` | Provider-level usage statistics |
+| `GET`  | `/api/analytics` | Code change trends, tool usage, productivity KPIs |
+| `GET`  | `/api/hourly-activity` | Hourly activity data for 24-hour heatmap |
 
 ### Query Parameters
 
