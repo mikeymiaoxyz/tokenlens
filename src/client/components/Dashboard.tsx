@@ -28,6 +28,8 @@ const TIME_RANGES = [
 
 type LocalTimeRangeKey = typeof TIME_RANGES[number]['key'];
 
+type TokenTotalMode = 'context' | 'raw';
+
 function InsightCard({ label, title, detail, badge }: { label: string; title: string; detail: string; badge?: string }) {
   return (
     <div className="flex flex-col justify-between rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(120,113,108,0.06)] transition-shadow duration-200 hover:shadow-[0_4px_12px_rgba(120,113,108,0.09)]">
@@ -51,6 +53,47 @@ function KPICard({ label, value, sub, insight, accent }: { label: string; value:
       {sub && <span className="text-xs font-medium text-stone-400 mt-0.5">{sub}</span>}
       {insight && <div className="mt-2.5 pt-2.5 border-t border-stone-100 text-[12px] font-medium text-stone-500 leading-relaxed">{insight}</div>}
     </div>
+  );
+}
+
+function InteractiveTotalTokensCard({
+  contextTotalTokens,
+  rawTotalTokens,
+  mode,
+  onToggle,
+}: {
+  contextTotalTokens: number;
+  rawTotalTokens: number;
+  mode: TokenTotalMode;
+  onToggle: () => void;
+}) {
+  const isContext = mode === 'context';
+  const value = isContext ? contextTotalTokens : rawTotalTokens;
+  const formula = isContext ? 'input context + output context' : 'input token + output token';
+  const breakdown = isContext ? 'input + cache read/write + output' : 'input + output, excluding cache read/write';
+  const nextFormula = isContext ? 'input token + output token' : 'input context + output context';
+
+  return (
+    <button
+      type="button"
+      data-testid="total-tokens-card"
+      title="Click to switch total token formula"
+      aria-label={`Total tokens: ${formatTokens(value)}. Formula: ${formula}. Click to switch to ${nextFormula}.`}
+      onClick={onToggle}
+      className="flex flex-col gap-1 p-5 rounded-2xl bg-white shadow-[0_1px_3px_rgba(120,113,108,0.06)] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(120,113,108,0.09)] hover:ring-2 hover:ring-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-left group"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] font-medium text-stone-400">Total tokens</span>
+        <span className="text-[10px] font-medium text-indigo-400 group-hover:text-indigo-600 transition-colors">Click to switch</span>
+      </div>
+      <span className="text-3xl font-extrabold tracking-tighter font-mono mt-1 text-indigo-600">
+        {formatTokens(value)}
+      </span>
+      <span className="text-xs font-medium text-stone-400 mt-0.5">{formula}</span>
+      <div className="mt-2 pt-2 border-t border-stone-100 text-[11px] font-medium text-stone-500 leading-relaxed">
+        {breakdown}
+      </div>
+    </button>
   );
 }
 
@@ -138,6 +181,7 @@ export function Dashboard() {
   const [showPricing, setShowPricing] = useState(false);
   const [metric, setMetric] = useLocalStorageState<MetricMode>('dashboard_metric', 'tokens');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [tokenTotalMode, setTokenTotalMode] = useState<TokenTotalMode>('context');
 
   useEffect(() => {
     if (!showPricing) return;
@@ -188,7 +232,7 @@ export function Dashboard() {
 
   // Aggregated data from filteredDaily
   const totals = useMemo(() => {
-    return filteredDaily.reduce((acc, d) => ({
+    const base = filteredDaily.reduce((acc, d) => ({
       inputTokens: acc.inputTokens + d.inputTokens,
       outputTokens: acc.outputTokens + d.outputTokens,
       cacheCreationTokens: acc.cacheCreationTokens + d.cacheCreationTokens,
@@ -196,6 +240,11 @@ export function Dashboard() {
       totalTokens: acc.totalTokens + d.totalTokens,
       totalCost: acc.totalCost + d.totalCost,
     }), { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, totalTokens: 0, totalCost: 0 });
+    return {
+      ...base,
+      contextTotalTokens: base.inputTokens + base.cacheReadTokens + base.cacheCreationTokens + base.outputTokens,
+      rawTotalTokens: base.inputTokens + base.outputTokens,
+    };
   }, [filteredDaily]);
 
   const activeDays = filteredDaily.length;
@@ -280,7 +329,7 @@ export function Dashboard() {
   }, [projectsData.data]);
 
   // Pinned providers
-  const PINNED_PROVIDERS =['all', 'claude', 'codex', 'hermes', 'openclaw'];
+  const PINNED_PROVIDERS = ['all', 'claude', 'codex', 'hermes', 'openclaw'];
   const PROVIDER_DISPLAY: Record<string, string> = {
     all: 'All',
     claude: 'Claude Code',
@@ -291,17 +340,25 @@ export function Dashboard() {
   const otherProviders = providers.filter(p => !PINNED_PROVIDERS.includes(p.name));
 
   const isNonPinnedSelected = !PINNED_PROVIDERS.includes(provider);
-  const selectedProvider = isNonPinnedSelected? providers.find(p => p.name === provider) : null;
+  const selectedProvider = isNonPinnedSelected ? providers.find(p => p.name === provider) : null;
 
   const renderProviderSwitcher = () => (
-    <div className="flex items-center gap-1 p-1 bg-stone-200/50 rounded-xl w-fit shadow-inner border border-stone-200/50">
+    <div
+      className="flex w-full max-w-full flex-wrap items-center gap-1 rounded-xl border border-indigo-500/20 p-1 md:w-fit md:flex-nowrap"
+      style={{
+        background: 'rgba(30, 27, 75, 0.85)',
+        boxShadow: '0 0 20px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255,255,255,0.05), inset 0 0 15px rgba(99, 102, 241, 0.05)',
+      }}
+      data-testid="provider-switcher"
+    >
       {PINNED_PROVIDERS.map(p => (
         <button
           key={p}
+          data-testid={`provider-btn-${p}`}
           onClick={() => handleProviderChange(p)}
-          className={`px-4 py-2.5 rounded-lg text-[12px] font-bold tracking-wide transition-all duration-200 ${provider === p
-            ? 'bg-white text-indigo-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] ring-1 ring-indigo-500/20'
-            : 'text-stone-500 hover:text-stone-800 hover:bg-stone-200/50'
+          className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-[12px] font-bold tracking-wide transition-all duration-200 sm:px-4 ${provider === p
+            ? 'text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.3)] bg-indigo-900/50 ring-1 ring-cyan-400/30'
+            : 'text-indigo-300 hover:text-cyan-200 hover:bg-indigo-900/30'
             }`}
         >
           {PROVIDER_DISPLAY[p] || p}
@@ -310,25 +367,34 @@ export function Dashboard() {
       {otherProviders.length > 0 && (
         <div className="relative">
           <button
+            data-testid="provider-btn-more"
             onClick={() => setDropdownOpen(o => !o)}
-            className={`flex items-center gap-1 px-4 py-2.5 rounded-lg text-[12px] font-bold tracking-wide transition-all duration-200 ${!PINNED_PROVIDERS.includes(provider)
-              ? 'bg-white text-indigo-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] ring-1 ring-indigo-500/20'
-              : 'text-stone-500 hover:text-stone-800 hover:bg-stone-200/50'
+            className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-3 py-2.5 text-[12px] font-bold tracking-wide transition-all duration-200 sm:px-4 ${!PINNED_PROVIDERS.includes(provider)
+              ? 'text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.3)] bg-indigo-900/50 ring-1 ring-cyan-400/30'
+              : 'text-indigo-300 hover:text-cyan-200 hover:bg-indigo-900/30'
               }`}
->
+          >
             {isNonPinnedSelected && selectedProvider ? selectedProvider.displayName : 'More'}
             <svg className={`w-3 h-3 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
           </button>
           {dropdownOpen && (
-            <div className="absolute top-full right-0 mt-1 z-50 bg-white rounded-xl shadow-[0_8px_30px_rgba(120,113,108,0.15)] border border-stone-200/60 py-1 min-w-[160px]">
+            <div
+              className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-xl py-1 md:left-auto md:right-0"
+              style={{
+                background: 'rgba(30, 27, 75, 0.95)',
+                boxShadow: '0 0 20px rgba(99, 102, 241, 0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+              }}
+            >
               {otherProviders.map(p => (
                 <button
                   key={p.name}
+                  data-testid={`provider-btn-${p.name}`}
                   onClick={() => { handleProviderChange(p.name); setDropdownOpen(false); }}
-                  className={`w-full text-left px-4 py-2 text-[12px] font-medium transition-colors ${provider === p.name ? 'text-indigo-600 bg-indigo-50' : 'text-stone-600 hover:bg-stone-50'}`}
+                  className={`w-full text-left px-4 py-2 text-[12px] font-medium transition-colors ${provider === p.name ? 'text-cyan-300 bg-indigo-900/50' : 'text-indigo-300 hover:text-cyan-200 hover:bg-indigo-900/30'}`}
                 >
                   {p.displayName}
-                  {!p.available && <span className="ml-2 text-[10px] text-stone-400">(Unavailable)</span>}
+                  {!p.available && <span className="ml-2 text-[10px] text-indigo-500">(Unavailable)</span>}
                 </button>
               ))}
             </div>
@@ -411,7 +477,12 @@ export function Dashboard() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-        <KPICard label="Total tokens" value={formatTokens(totals.totalTokens)} accent insight="The primary volume indicator for the selected period." />
+        <InteractiveTotalTokensCard
+          contextTotalTokens={totals.contextTotalTokens}
+          rawTotalTokens={totals.rawTotalTokens}
+          mode={tokenTotalMode}
+          onToggle={() => setTokenTotalMode(m => m === 'context' ? 'raw' : 'context')}
+        />
         <KPICard label="Input context" value={formatTokens(totals.inputTokens + totals.cacheReadTokens + totals.cacheCreationTokens)} sub="input + cache read/write" insight="Total context tokens consumed."/>
         <KPICard label="Output context" value={formatTokens(totals.outputTokens)} sub="model generated" insight="Tokens generated by models." />
         <KPICard label="Cache hit" value={formatPercent(cacheHitRate)} insight="Higher hit rate reduces cost." />
